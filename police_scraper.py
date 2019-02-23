@@ -3,6 +3,8 @@ import requests
 from typing import List, Dict
 import random
 import pandas as pd
+import os
+import time
 
 def fetch_soup(link: str) -> BeautifulSoup:
     desktop_agents = ['Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/54.0.2840.99 Safari/537.36',
@@ -76,5 +78,20 @@ def get_kep_plusz_jogalap(oldal_link: str) -> Dict[int, List[str]]:
 def oldal_get_loop(tol: int, ig: int) -> Dict[str, List[str]]:
 	adat_dict_start = dict()
 	for index in range(tol, ig + 1):
+		time.sleep(1)
+		print("oldal ", index)
 		adat_dict_start.update(get_kep_plusz_jogalap(oldal_link + str(index)))
 	return adat_dict_start
+
+def kep_letolt(pakk: List[str]) -> None:
+	time.sleep(5)
+	azonosito = pakk[0].split("/")[-1]
+	bun = pakk[1].replace(" ", "_")
+	print(f"curl http://www.police.hu{pakk[0]} -o  dataset/{bun}_{azonosito}.jpg")
+	os.system(f"curl http://www.police.hu{pakk[0]} -o  dataset/{bun}_{azonosito}.jpg")
+	return
+
+kep_jogalap = list(oldal_get_loop(0, 30).values())
+
+for kep_pakk in kep_jogalap:
+	kep_letolt(kep_pakk)
