@@ -1,6 +1,11 @@
 import face_recognition
 import glob
 import pickle
+from PIL import Image, ImageTk  
+
+import tkinter as tk  
+
+from jinja2 import Template, Environment, PackageLoader, select_autoescape, FileSystemLoader
 
 model_ready = False
 try:
@@ -32,4 +37,42 @@ def get_similars(filename: str):
 	#	print("The test image has a distance of {:.2} from known image #{} ({})".format(distance, i, face_encodings[i][0]))
 	s = sorted(list(zip([f[0] for f in face_encodings], face_distances)), key = lambda x: x[1])
 	print(s[:10])
-	return s
+	top_n_similar_files = lambda n: ["dataset/" + "_".join(image[0]) for image in s[:n]] 
+	return s, top_n_similar_files(10)
+
+def show_similars(fn: str):
+	sims = get_similars(fn)
+	testimg = Image.open(fn)
+	#testimg.show()
+
+	root = tk.Tk()  
+	root.title("display image")  
+	photo=ImageTk.PhotoImage(testimg).zoom(0.6, 0.6)
+	cv = tk.Canvas()  
+	cv.pack(side='top', fill='both', expand='yes') 
+	cv.create_image(10, 10, image=photo, anchor='nw') 
+	i = 10
+	#for img in sims[1]:
+	#	print(img)
+	p = [ImageTk.PhotoImage(Image.open(img)) for img in sims[1]]
+
+	cv.create_image(i+450, 10, image=p[0], anchor='nw') 
+	cv.create_image(i+800, 10, image=p[1], anchor='nw') 
+	cv.create_image(i+1150, 10, image=p[2], anchor='nw') 
+	root.geometry("1600x800")
+	root.mainloop()
+
+def html_similars(fn: str):
+	env = Environment(
+    autoescape=select_autoescape(['html'])
+	)
+
+	loader = FileSystemLoader('./')
+	t = Template(loader.get_source(env, template = 'template.html')[0])
+
+	sims = get_similars(fn)[1]
+
+	filenames = [" ".join(s.split("/")[-1].split("_")[:-1]) for s in sims]
+
+
+	t.stream(teszt = fn, hasonlok = list(zip(sims, filenames))).dump(fn.split("/")[-1] + ".html")
