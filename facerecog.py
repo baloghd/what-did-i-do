@@ -18,11 +18,26 @@ except:
 	pass
 
 image_paths = glob.glob("dataset/*")
-images = [(x.split("/")[1].split("_"), face_recognition.load_image_file(x)) for x in image_paths]
+images = []
+
+for x in image_paths:
+	try:
+		images.append([x.split("/")[1].split("_"), face_recognition.load_image_file(x)])
+	except:
+		pass
 
 if not model_ready:
-	face_encodings = [(x[0], face_recognition.face_encodings(x[1])[0]) for x in images]
+	#face_encodings = [(x[0], face_recognition.face_encodings(x[1])[0]) for x in images]
+	
+	face_encodings = []
+	for x in images:
+		try:
+			face_encodings.append([x[0], face_recognition.face_encodings(x[1])[0]])
+		except:
+			pass
+
 	with open("model", "wb") as model_pickle:
+		print(f"model pickled with {len(face_encodings)} faces")
 		pickle.dump(face_encodings, model_pickle)
 else:
 	face_encodings = model_pickle
@@ -38,7 +53,7 @@ def get_similars(filename: str):
 	s = sorted(list(zip([f[0] for f in face_encodings], face_distances)), key = lambda x: x[1])
 	print(s[:10])
 	top_n_similar_files = lambda n: ["dataset/" + "_".join(image[0]) for image in s[:n]] 
-	return s, top_n_similar_files(10)
+	return s, top_n_similar_files(4)
 
 def show_similars(fn: str):
 	sims = get_similars(fn)
@@ -68,11 +83,13 @@ def html_similars(fn: str):
 	)
 
 	loader = FileSystemLoader('./')
-	t = Template(loader.get_source(env, template = 'template.html')[0])
+	t = Template(loader.get_source(env, template = 'html/index.html')[0])
 
 	sims = get_similars(fn)[1]
-
 	filenames = [" ".join(s.split("/")[-1].split("_")[:-1]) for s in sims]
+	t.stream(teszt = fn, hasonlok = list(zip(sims, filenames))).dump("html/" + fn.split("/")[-1] + ".html")
 
-
-	t.stream(teszt = fn, hasonlok = list(zip(sims, filenames))).dump(fn.split("/")[-1] + ".html")
+tesztek = glob.glob("tests/*")
+for teszt in tesztek:
+	print("generating " + teszt)
+	html_similars(teszt)
